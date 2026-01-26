@@ -319,7 +319,7 @@ const Index = () => {
         <div className="container mx-auto max-w-7xl">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-sm text-muted-foreground">
-              Industrial Mini Project • Emotion-Aware Multimodal System
+              Emotion-Aware Multimodal System
             </p>
             <p className="text-sm text-muted-foreground">
               Multilingual Hate Speech Detection Platform
