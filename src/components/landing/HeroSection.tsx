@@ -70,11 +70,20 @@ export function HeroSection() {
             transition={{ duration: 0.5, delay: 0.6 }}
             className="flex flex-col sm:flex-row gap-4 justify-center"
           >
-            <Button size="lg" className="group glow-primary">
+            <Button 
+              size="lg" 
+              className="group glow-primary"
+              onClick={() => document.getElementById('dashboard')?.scrollIntoView({ behavior: 'smooth' })}
+            >
               Start Analysis
               <ArrowRight className="ml-2 w-4 h-4 transition-transform group-hover:translate-x-1" />
             </Button>
-            <Button size="lg" variant="outline" className="border-muted hover:bg-muted/50">
+            <Button 
+              size="lg" 
+              variant="outline" 
+              className="border-muted hover:bg-muted/50"
+              onClick={() => window.open('https://github.com', '_blank')}
+            >
               View Documentation
             </Button>
           </motion.div>

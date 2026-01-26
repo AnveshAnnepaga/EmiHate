@@ -8,10 +8,11 @@ interface UploadedFile {
   name: string;
   type: 'text' | 'image' | 'pdf';
   size: string;
+  content?: string;
 }
 
 interface UploadZoneProps {
-  onFilesChange?: (files: UploadedFile[]) => void;
+  onFilesChange?: (files: UploadedFile[], rawFiles?: File[]) => void;
 }
 
 export function UploadZone({ onFilesChange }: UploadZoneProps) {
@@ -46,8 +47,9 @@ export function UploadZone({ onFilesChange }: UploadZoneProps) {
     }));
     
     const updatedFiles = [...files, ...newFiles];
+    const allRawFiles = rawFiles;
     setFiles(updatedFiles);
-    onFilesChange?.(updatedFiles);
+    onFilesChange?.(updatedFiles, allRawFiles);
   };
 
   const removeFile = (id: string) => {
@@ -92,8 +94,11 @@ export function UploadZone({ onFilesChange }: UploadZoneProps) {
           type="file"
           className="hidden"
           multiple
-          accept=".txt,.pdf,.png,.jpg,.jpeg,.webp"
-          onChange={(e) => processFiles(Array.from(e.target.files || []))}
+          accept=".txt,.pdf,.png,.jpg,.jpeg,.webp,.docx"
+          onChange={(e) => {
+            const fileList = Array.from(e.target.files || []);
+            processFiles(fileList);
+          }}
         />
         
         <div className="flex flex-col items-center justify-center gap-4">

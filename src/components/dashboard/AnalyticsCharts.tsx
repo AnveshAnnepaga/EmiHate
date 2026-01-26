@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { BarChart3, PieChart, TrendingUp, Globe } from 'lucide-react';
+import { PieChart, TrendingUp, Globe, RefreshCw } from 'lucide-react';
 import { 
   AreaChart, 
   Area, 
@@ -14,33 +14,120 @@ import {
   BarChart,
   Bar,
 } from 'recharts';
+import { useState, useEffect } from 'react';
+import { getAnalysisHistory, clearAnalysisHistory, AnalysisResult } from '@/lib/analysisEngine';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 
-const trendData = [
-  { date: 'Jan', hate: 120, offensive: 80, neutral: 200 },
-  { date: 'Feb', hate: 150, offensive: 100, neutral: 180 },
-  { date: 'Mar', hate: 90, offensive: 60, neutral: 220 },
-  { date: 'Apr', hate: 180, offensive: 120, neutral: 150 },
-  { date: 'May', hate: 140, offensive: 90, neutral: 190 },
-  { date: 'Jun', hate: 200, offensive: 140, neutral: 160 },
-];
+function aggregateHistoryData(history: AnalysisResult[]) {
+  // Group by date
+  const dateGroups: Record<string, { hate: number; offensive: number; neutral: number }> = {};
+  
+  history.forEach(item => {
+    const dateKey = item.timestamp.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    if (!dateGroups[dateKey]) {
+      dateGroups[dateKey] = { hate: 0, offensive: 0, neutral: 0 };
+    }
+    
+    if (item.overallRisk > 0.6) {
+      dateGroups[dateKey].hate++;
+    } else if (item.overallRisk > 0.3) {
+      dateGroups[dateKey].offensive++;
+    } else {
+      dateGroups[dateKey].neutral++;
+    }
+  });
 
-const emotionData = [
-  { name: 'Anger', value: 35, color: 'hsl(0, 84%, 60%)' },
-  { name: 'Fear', value: 25, color: 'hsl(263, 70%, 50%)' },
-  { name: 'Sadness', value: 20, color: 'hsl(210, 100%, 56%)' },
-  { name: 'Disgust', value: 12, color: 'hsl(142, 76%, 36%)' },
-  { name: 'Surprise', value: 8, color: 'hsl(38, 92%, 50%)' },
-];
+  return Object.entries(dateGroups)
+    .slice(-7)
+    .map(([date, counts]) => ({ date, ...counts }));
+}
 
-const languageData = [
-  { language: 'English', count: 1250 },
-  { language: 'Hindi', count: 890 },
-  { language: 'Telugu', count: 560 },
-];
+function aggregateEmotionData(history: AnalysisResult[]) {
+  const emotionCounts: Record<string, { value: number; color: string }> = {
+    'Anger': { value: 0, color: 'hsl(0, 84%, 60%)' },
+    'Fear': { value: 0, color: 'hsl(263, 70%, 50%)' },
+    'Sadness': { value: 0, color: 'hsl(210, 100%, 56%)' },
+    'Joy': { value: 0, color: 'hsl(142, 76%, 36%)' },
+    'Frustration': { value: 0, color: 'hsl(38, 92%, 50%)' },
+    'Disgust': { value: 0, color: 'hsl(280, 70%, 50%)' },
+    'Surprise': { value: 0, color: 'hsl(180, 70%, 50%)' },
+    'Neutral': { value: 0, color: 'hsl(220, 20%, 50%)' },
+  };
+
+  history.forEach(item => {
+    item.emotions.forEach(emotion => {
+      if (emotionCounts[emotion.label]) {
+        emotionCounts[emotion.label].value++;
+      }
+    });
+  });
+
+  return Object.entries(emotionCounts)
+    .filter(([_, data]) => data.value > 0)
+    .map(([name, data]) => ({ name, value: data.value, color: data.color }));
+}
+
+function aggregateLanguageData(history: AnalysisResult[]) {
+  const langCounts: Record<string, number> = { English: 0, Hindi: 0, Telugu: 0 };
+  
+  history.forEach(item => {
+    if (langCounts[item.language] !== undefined) {
+      langCounts[item.language]++;
+    }
+  });
+
+  return Object.entries(langCounts)
+    .filter(([_, count]) => count > 0)
+    .map(([language, count]) => ({ language, count }));
+}
 
 export function AnalyticsCharts() {
+  const [history, setHistory] = useState<AnalysisResult[]>([]);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    setHistory(getAnalysisHistory());
+  }, []);
+
+  const trendData = aggregateHistoryData(history);
+  const emotionData = aggregateEmotionData(history);
+  const languageData = aggregateLanguageData(history);
+
+  const handleClearHistory = () => {
+    clearAnalysisHistory();
+    setHistory([]);
+    toast({
+      title: 'History Cleared',
+      description: 'All analysis history has been removed.',
+    });
+  };
+
+  const hasData = history.length > 0;
+
   return (
     <div className="space-y-6">
+      {/* Stats Header */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex items-center justify-between"
+      >
+        <div className="text-sm text-muted-foreground">
+          {hasData ? (
+            <>Total analyses: <span className="text-foreground font-medium">{history.length}</span></>
+          ) : (
+            'No analysis history yet. Run some analyses to see trends.'
+          )}
+        </div>
+        {hasData && (
+          <Button variant="ghost" size="sm" onClick={handleClearHistory} className="gap-2">
+            <RefreshCw className="w-4 h-4" />
+            Clear History
+          </Button>
+        )}
+      </motion.div>
+
       {/* Trend Chart */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
@@ -75,56 +162,62 @@ export function AnalyticsCharts() {
         </div>
 
         <div className="h-64">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={trendData}>
-              <defs>
-                <linearGradient id="hateGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="hsl(0, 84%, 60%)" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="hsl(0, 84%, 60%)" stopOpacity={0} />
-                </linearGradient>
-                <linearGradient id="offensiveGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="hsl(38, 92%, 50%)" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="hsl(38, 92%, 50%)" stopOpacity={0} />
-                </linearGradient>
-                <linearGradient id="neutralGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="hsl(142, 76%, 36%)" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="hsl(142, 76%, 36%)" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(217, 33%, 17%)" />
-              <XAxis dataKey="date" stroke="hsl(215, 20%, 65%)" fontSize={12} />
-              <YAxis stroke="hsl(215, 20%, 65%)" fontSize={12} />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: 'hsl(222, 47%, 8%)',
-                  border: '1px solid hsl(217, 33%, 17%)',
-                  borderRadius: '8px',
-                }}
-                labelStyle={{ color: 'hsl(210, 40%, 98%)' }}
-              />
-              <Area
-                type="monotone"
-                dataKey="hate"
-                stroke="hsl(0, 84%, 60%)"
-                fillOpacity={1}
-                fill="url(#hateGradient)"
-              />
-              <Area
-                type="monotone"
-                dataKey="offensive"
-                stroke="hsl(38, 92%, 50%)"
-                fillOpacity={1}
-                fill="url(#offensiveGradient)"
-              />
-              <Area
-                type="monotone"
-                dataKey="neutral"
-                stroke="hsl(142, 76%, 36%)"
-                fillOpacity={1}
-                fill="url(#neutralGradient)"
-              />
-            </AreaChart>
-          </ResponsiveContainer>
+          {trendData.length > 0 ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={trendData}>
+                <defs>
+                  <linearGradient id="hateGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="hsl(0, 84%, 60%)" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="hsl(0, 84%, 60%)" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="offensiveGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="hsl(38, 92%, 50%)" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="hsl(38, 92%, 50%)" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="neutralGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="hsl(142, 76%, 36%)" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="hsl(142, 76%, 36%)" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(217, 33%, 17%)" />
+                <XAxis dataKey="date" stroke="hsl(215, 20%, 65%)" fontSize={12} />
+                <YAxis stroke="hsl(215, 20%, 65%)" fontSize={12} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'hsl(222, 47%, 8%)',
+                    border: '1px solid hsl(217, 33%, 17%)',
+                    borderRadius: '8px',
+                  }}
+                  labelStyle={{ color: 'hsl(210, 40%, 98%)' }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="hate"
+                  stroke="hsl(0, 84%, 60%)"
+                  fillOpacity={1}
+                  fill="url(#hateGradient)"
+                />
+                <Area
+                  type="monotone"
+                  dataKey="offensive"
+                  stroke="hsl(38, 92%, 50%)"
+                  fillOpacity={1}
+                  fill="url(#offensiveGradient)"
+                />
+                <Area
+                  type="monotone"
+                  dataKey="neutral"
+                  stroke="hsl(142, 76%, 36%)"
+                  fillOpacity={1}
+                  fill="url(#neutralGradient)"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
+              No trend data available yet
+            </div>
+          )}
         </div>
       </motion.div>
 
@@ -148,43 +241,51 @@ export function AnalyticsCharts() {
           </div>
 
           <div className="h-48 flex items-center justify-center">
-            <ResponsiveContainer width="100%" height="100%">
-              <RechartsPie>
-                <Pie
-                  data={emotionData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={40}
-                  outerRadius={70}
-                  paddingAngle={3}
-                  dataKey="value"
-                >
-                  {emotionData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: 'hsl(222, 47%, 8%)',
-                    border: '1px solid hsl(217, 33%, 17%)',
-                    borderRadius: '8px',
-                  }}
-                />
-              </RechartsPie>
-            </ResponsiveContainer>
+            {emotionData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <RechartsPie>
+                  <Pie
+                    data={emotionData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={40}
+                    outerRadius={70}
+                    paddingAngle={3}
+                    dataKey="value"
+                  >
+                    {emotionData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: 'hsl(222, 47%, 8%)',
+                      border: '1px solid hsl(217, 33%, 17%)',
+                      borderRadius: '8px',
+                    }}
+                  />
+                </RechartsPie>
+              </ResponsiveContainer>
+            ) : (
+              <div className="text-muted-foreground text-sm">
+                No emotion data available
+              </div>
+            )}
           </div>
 
-          <div className="flex flex-wrap justify-center gap-3 mt-4">
-            {emotionData.map((emotion) => (
-              <div key={emotion.name} className="flex items-center gap-2 text-xs">
-                <div 
-                  className="w-2 h-2 rounded-full" 
-                  style={{ backgroundColor: emotion.color }}
-                />
-                <span className="text-muted-foreground">{emotion.name}</span>
-              </div>
-            ))}
-          </div>
+          {emotionData.length > 0 && (
+            <div className="flex flex-wrap justify-center gap-3 mt-4">
+              {emotionData.map((emotion) => (
+                <div key={emotion.name} className="flex items-center gap-2 text-xs">
+                  <div 
+                    className="w-2 h-2 rounded-full" 
+                    style={{ backgroundColor: emotion.color }}
+                  />
+                  <span className="text-muted-foreground">{emotion.name}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </motion.div>
 
         {/* Language Breakdown */}
@@ -205,37 +306,43 @@ export function AnalyticsCharts() {
           </div>
 
           <div className="h-48">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={languageData} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(217, 33%, 17%)" />
-                <XAxis type="number" stroke="hsl(215, 20%, 65%)" fontSize={12} />
-                <YAxis 
-                  dataKey="language" 
-                  type="category" 
-                  stroke="hsl(215, 20%, 65%)" 
-                  fontSize={12}
-                  width={60}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: 'hsl(222, 47%, 8%)',
-                    border: '1px solid hsl(217, 33%, 17%)',
-                    borderRadius: '8px',
-                  }}
-                />
-                <Bar 
-                  dataKey="count" 
-                  fill="url(#barGradient)"
-                  radius={[0, 4, 4, 0]}
-                />
-                <defs>
-                  <linearGradient id="barGradient" x1="0" y1="0" x2="1" y2="0">
-                    <stop offset="0%" stopColor="hsl(217, 91%, 60%)" />
-                    <stop offset="100%" stopColor="hsl(263, 70%, 50%)" />
-                  </linearGradient>
-                </defs>
-              </BarChart>
-            </ResponsiveContainer>
+            {languageData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={languageData} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(217, 33%, 17%)" />
+                  <XAxis type="number" stroke="hsl(215, 20%, 65%)" fontSize={12} />
+                  <YAxis 
+                    dataKey="language" 
+                    type="category" 
+                    stroke="hsl(215, 20%, 65%)" 
+                    fontSize={12}
+                    width={60}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: 'hsl(222, 47%, 8%)',
+                      border: '1px solid hsl(217, 33%, 17%)',
+                      borderRadius: '8px',
+                    }}
+                  />
+                  <Bar 
+                    dataKey="count" 
+                    fill="url(#barGradient)"
+                    radius={[0, 4, 4, 0]}
+                  />
+                  <defs>
+                    <linearGradient id="barGradient" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%" stopColor="hsl(217, 91%, 60%)" />
+                      <stop offset="100%" stopColor="hsl(263, 70%, 50%)" />
+                    </linearGradient>
+                  </defs>
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
+                No language data available
+              </div>
+            )}
           </div>
         </motion.div>
       </div>

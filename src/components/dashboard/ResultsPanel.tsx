@@ -1,46 +1,68 @@
 import { motion } from 'framer-motion';
-import { AlertTriangle, MessageCircle, Shield, Smile, TrendingUp, Zap } from 'lucide-react';
+import { AlertTriangle, Shield, Smile, TrendingUp, Globe, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { AnalysisResult } from '@/lib/analysisEngine';
 
-interface AnalysisResult {
-  hateLabels: { label: string; confidence: number; severity: 'low' | 'medium' | 'high' }[];
-  sentiment: { polarity: 'positive' | 'negative' | 'neutral'; score: number };
-  emotions: { emoji: string; label: string; score: number }[];
-  language: string;
-  overallRisk: number;
+interface ResultsPanelProps {
+  result: AnalysisResult;
 }
 
-const mockResult: AnalysisResult = {
-  hateLabels: [
-    { label: 'Religious Hate', confidence: 0.87, severity: 'high' },
-    { label: 'Offensive Language', confidence: 0.72, severity: 'medium' },
-    { label: 'Implicit Bias', confidence: 0.45, severity: 'low' },
-  ],
-  sentiment: { polarity: 'negative', score: 0.78 },
-  emotions: [
-    { emoji: '😠', label: 'Anger', score: 0.82 },
-    { emoji: '😤', label: 'Frustration', score: 0.65 },
-    { emoji: '😢', label: 'Sadness', score: 0.23 },
-  ],
-  language: 'English',
-  overallRisk: 0.76,
-};
+export function ResultsPanel({ result }: ResultsPanelProps) {
+  const getRiskLevel = (risk: number): string => {
+    if (risk > 0.7) return 'High Risk';
+    if (risk > 0.4) return 'Medium Risk';
+    return 'Low Risk';
+  };
 
-export function ResultsPanel() {
-  const result = mockResult;
+  const getRiskColor = (risk: number): string => {
+    if (risk > 0.7) return 'text-severity-high';
+    if (risk > 0.4) return 'text-severity-medium';
+    return 'text-severity-low';
+  };
 
   return (
     <div className="space-y-6">
+      {/* Analysis Meta Info */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="glass-card p-4 flex items-center justify-between"
+      >
+        <div className="flex items-center gap-3">
+          <FileText className="w-4 h-4 text-muted-foreground" />
+          <span className="text-sm text-muted-foreground truncate max-w-[200px]">
+            {result.inputName}
+          </span>
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <Globe className="w-4 h-4 text-primary" />
+            <span className="text-sm text-foreground">{result.language}</span>
+          </div>
+          <span className="text-xs text-muted-foreground">
+            {result.timestamp.toLocaleTimeString()}
+          </span>
+        </div>
+      </motion.div>
+
       {/* Overall Risk Score */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.05 }}
         className="glass-card p-6"
       >
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-severity-high/10 flex items-center justify-center">
-              <AlertTriangle className="w-5 h-5 text-severity-high" />
+            <div className={cn(
+              "w-10 h-10 rounded-xl flex items-center justify-center",
+              result.overallRisk > 0.7 ? "bg-severity-high/10" : 
+              result.overallRisk > 0.4 ? "bg-severity-medium/10" : "bg-severity-low/10"
+            )}>
+              <AlertTriangle className={cn(
+                "w-5 h-5",
+                getRiskColor(result.overallRisk)
+              )} />
             </div>
             <div>
               <h3 className="font-semibold text-foreground">Risk Assessment</h3>
@@ -48,10 +70,12 @@ export function ResultsPanel() {
             </div>
           </div>
           <div className="text-right">
-            <span className="text-3xl font-bold text-severity-high">
+            <span className={cn("text-3xl font-bold", getRiskColor(result.overallRisk))}>
               {Math.round(result.overallRisk * 100)}%
             </span>
-            <p className="text-xs text-severity-high">High Risk</p>
+            <p className={cn("text-xs", getRiskColor(result.overallRisk))}>
+              {getRiskLevel(result.overallRisk)}
+            </p>
           </div>
         </div>
         
@@ -84,8 +108,8 @@ export function ResultsPanel() {
             <Shield className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <h3 className="font-semibold text-foreground">Hate Categories</h3>
-            <p className="text-xs text-muted-foreground">Multilabel classification</p>
+            <h3 className="font-semibold text-foreground">Classification Results</h3>
+            <p className="text-xs text-muted-foreground">Multilabel detection</p>
           </div>
         </div>
 
@@ -95,7 +119,7 @@ export function ResultsPanel() {
               key={label.label}
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2 + i * 0.1 }}
+              transition={{ delay: 0.15 + i * 0.05 }}
               className="flex items-center justify-between"
             >
               <div className="flex items-center gap-2">
@@ -112,7 +136,7 @@ export function ResultsPanel() {
                   <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${label.confidence * 100}%` }}
-                    transition={{ duration: 0.8, delay: 0.3 + i * 0.1 }}
+                    transition={{ duration: 0.8, delay: 0.2 + i * 0.05 }}
                     className="confidence-fill"
                   />
                 </div>
@@ -152,9 +176,6 @@ export function ResultsPanel() {
             )}>
               {result.sentiment.polarity.charAt(0).toUpperCase() + result.sentiment.polarity.slice(1)}
             </span>
-            <span className="text-sm text-muted-foreground">
-              Language: {result.language}
-            </span>
           </div>
           <span className="text-2xl font-bold text-foreground">
             {Math.round(result.sentiment.score * 100)}%
@@ -185,7 +206,7 @@ export function ResultsPanel() {
               key={emotion.label}
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.4 + i * 0.1 }}
+              transition={{ delay: 0.35 + i * 0.05 }}
               className="emotion-badge hover-lift cursor-default"
             >
               <span className="text-lg">{emotion.emoji}</span>
@@ -197,6 +218,36 @@ export function ResultsPanel() {
           ))}
         </div>
       </motion.div>
+
+      {/* Key Terms */}
+      {result.keyTerms.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="glass-card p-6"
+        >
+          <h3 className="font-semibold text-foreground mb-3">Key Influencing Terms</h3>
+          <div className="flex flex-wrap gap-2">
+            {result.keyTerms.map((term, i) => (
+              <motion.span
+                key={term.term}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.45 + i * 0.03 }}
+                className={cn(
+                  "px-3 py-1 rounded-full text-xs font-medium",
+                  term.isNegative 
+                    ? "bg-severity-high/10 text-severity-high border border-severity-high/20" 
+                    : "bg-severity-low/10 text-severity-low border border-severity-low/20"
+                )}
+              >
+                {term.term}
+              </motion.span>
+            ))}
+          </div>
+        </motion.div>
+      )}
     </div>
   );
 }

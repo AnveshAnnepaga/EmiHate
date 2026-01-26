@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { UploadZone } from '@/components/dashboard/UploadZone';
+import { TextInputZone } from '@/components/dashboard/TextInputZone';
 import { ResultsPanel } from '@/components/dashboard/ResultsPanel';
 import { ExplainabilityView } from '@/components/dashboard/ExplainabilityView';
 import { AnalyticsCharts } from '@/components/dashboard/AnalyticsCharts';
@@ -15,28 +16,125 @@ import {
   BarChart3, 
   Play,
   ArrowDown,
+  Type,
+  Upload,
 } from 'lucide-react';
+import { analyzeContent, saveAnalysisResult, AnalysisResult } from '@/lib/analysisEngine';
+import { useToast } from '@/hooks/use-toast';
 
 type ProcessingStage = 'idle' | 'uploading' | 'processing' | 'analyzing' | 'complete';
+type InputMode = 'text' | 'file';
+
+interface UploadedFile {
+  id: string;
+  name: string;
+  type: 'text' | 'image' | 'pdf';
+  size: string;
+  content?: string;
+}
 
 const Index = () => {
   const [stage, setStage] = useState<ProcessingStage>('idle');
-  const [hasFiles, setHasFiles] = useState(false);
+  const [inputMode, setInputMode] = useState<InputMode>('text');
+  const [textInput, setTextInput] = useState('');
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
+  const { toast } = useToast();
 
-  const startAnalysis = () => {
+  const hasInput = inputMode === 'text' ? textInput.trim().length > 0 : uploadedFiles.length > 0;
+
+  const extractTextFromFile = async (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      
+      if (file.type.includes('text') || file.name.endsWith('.txt')) {
+        reader.onload = (e) => resolve(e.target?.result as string || '');
+        reader.onerror = reject;
+        reader.readAsText(file);
+      } else if (file.type.includes('image')) {
+        // For images, we simulate OCR with a placeholder
+        resolve(`[Image content from: ${file.name}] - OCR extraction would process this image for text content.`);
+      } else if (file.type.includes('pdf') || file.name.endsWith('.pdf')) {
+        // For PDFs, simulate text extraction
+        resolve(`[PDF content from: ${file.name}] - Document text extraction would process this PDF.`);
+      } else {
+        resolve(`[Content from: ${file.name}]`);
+      }
+    });
+  };
+
+  const handleFilesChange = async (files: UploadedFile[], rawFiles?: File[]) => {
+    if (rawFiles && rawFiles.length > 0) {
+      const filesWithContent = await Promise.all(
+        files.map(async (f, i) => {
+          const content = rawFiles[i] ? await extractTextFromFile(rawFiles[i]) : '';
+          return { ...f, content };
+        })
+      );
+      setUploadedFiles(filesWithContent);
+    } else {
+      setUploadedFiles(files);
+    }
+  };
+
+  const startAnalysis = async () => {
     const stages: ProcessingStage[] = ['uploading', 'processing', 'analyzing', 'complete'];
-    let i = 0;
+    let stageIndex = 0;
     
     setStage(stages[0]);
-    
+
+    // Get text to analyze
+    let textToAnalyze = '';
+    let inputName = '';
+    let inputType: 'text' | 'image' | 'pdf' = 'text';
+
+    if (inputMode === 'text') {
+      textToAnalyze = textInput;
+      inputName = 'Direct Text Input';
+      inputType = 'text';
+    } else if (uploadedFiles.length > 0) {
+      const file = uploadedFiles[0];
+      textToAnalyze = file.content || `Content from ${file.name}`;
+      inputName = file.name;
+      inputType = file.type;
+    }
+
+    if (!textToAnalyze.trim()) {
+      toast({
+        title: 'No content to analyze',
+        description: 'Please enter text or upload a file first.',
+        variant: 'destructive',
+      });
+      setStage('idle');
+      return;
+    }
+
+    // Simulate processing stages
     const interval = setInterval(() => {
-      i++;
-      if (i < stages.length) {
-        setStage(stages[i]);
+      stageIndex++;
+      if (stageIndex < stages.length) {
+        setStage(stages[stageIndex]);
+        
+        if (stages[stageIndex] === 'complete') {
+          // Perform analysis
+          const result = analyzeContent(textToAnalyze, inputType, inputName);
+          setAnalysisResult(result);
+          saveAnalysisResult(result);
+          
+          toast({
+            title: 'Analysis Complete',
+            description: `Processed ${inputName} successfully.`,
+          });
+        }
       } else {
         clearInterval(interval);
       }
-    }, 1500);
+    }, 1200);
+  };
+
+  const resetAnalysis = () => {
+    setStage('idle');
+    setAnalysisResult(null);
   };
 
   return (
@@ -107,11 +205,42 @@ const Index = () => {
 
             <TabsContent value="analyze" className="space-y-6">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Upload Section */}
+                {/* Input Section */}
                 <div className="space-y-4">
-                  <UploadZone onFilesChange={(files) => setHasFiles(files.length > 0)} />
+                  {/* Input Mode Toggle */}
+                  <div className="flex gap-2 p-1 bg-muted/30 rounded-xl w-fit">
+                    <button
+                      onClick={() => setInputMode('text')}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                        inputMode === 'text' 
+                          ? 'bg-primary text-primary-foreground' 
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      <Type className="w-4 h-4" />
+                      Text Input
+                    </button>
+                    <button
+                      onClick={() => setInputMode('file')}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                        inputMode === 'file' 
+                          ? 'bg-primary text-primary-foreground' 
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      <Upload className="w-4 h-4" />
+                      File Upload
+                    </button>
+                  </div>
+
+                  {/* Input Zone */}
+                  {inputMode === 'text' ? (
+                    <TextInputZone value={textInput} onChange={setTextInput} />
+                  ) : (
+                    <UploadZone onFilesChange={handleFilesChange} />
+                  )}
                   
-                  {hasFiles && stage === 'idle' && (
+                  {hasInput && stage === 'idle' && (
                     <motion.div
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -127,13 +256,31 @@ const Index = () => {
                     </motion.div>
                   )}
 
-                  {stage !== 'idle' && <ProcessingIndicator stage={stage} />}
+                  {stage !== 'idle' && stage !== 'complete' && (
+                    <ProcessingIndicator stage={stage} />
+                  )}
+
+                  {stage === 'complete' && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                    >
+                      <Button 
+                        variant="outline" 
+                        size="lg" 
+                        className="w-full"
+                        onClick={resetAnalysis}
+                      >
+                        Analyze New Content
+                      </Button>
+                    </motion.div>
+                  )}
                 </div>
 
                 {/* Results Section */}
                 <div>
-                  {stage === 'complete' ? (
-                    <ResultsPanel />
+                  {stage === 'complete' && analysisResult ? (
+                    <ResultsPanel result={analysisResult} />
                   ) : (
                     <motion.div
                       initial={{ opacity: 0 }}
@@ -147,7 +294,7 @@ const Index = () => {
                         Results will appear here
                       </h3>
                       <p className="text-sm text-muted-foreground">
-                        Upload content and start analysis to see hate speech detection, 
+                        Enter text or upload content and start analysis to see hate speech detection, 
                         sentiment, and emotion results.
                       </p>
                     </motion.div>
@@ -157,7 +304,7 @@ const Index = () => {
             </TabsContent>
 
             <TabsContent value="explain">
-              <ExplainabilityView />
+              <ExplainabilityView result={analysisResult} />
             </TabsContent>
 
             <TabsContent value="analytics">
@@ -174,13 +321,9 @@ const Index = () => {
             <p className="text-sm text-muted-foreground">
               Industrial Mini Project • Emotion-Aware Multimodal System
             </p>
-            <div className="flex items-center gap-4 text-sm text-muted-foreground">
-              <span>A. Anvesh</span>
-              <span>•</span>
-              <span>R. Bharath Reddy</span>
-              <span>•</span>
-              <span>Ch. Damodhar</span>
-            </div>
+            <p className="text-sm text-muted-foreground">
+              Multilingual Hate Speech Detection Platform
+            </p>
           </div>
         </div>
       </footer>
