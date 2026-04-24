@@ -1,0 +1,15 @@
+torch
+transformers
+datasets
+evaluate
+fastapi
+uvicorn
+easyocr
+python-docx
+python-multipart
+scikit-learn
+accelerate
+langdetect
+lime
+shap
+PyPDF2

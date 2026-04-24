@@ -1,0 +1,45 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+.env
+.venv
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.cache
+nosetests.xml
+coverage.xml
+*.deprecated
+
+# Data and Models
+# Exclude data and models if they are too large and should be mounted/downloaded
+# However, for a self-contained image, you might want to keep the models.
+# If models are stored in /models, we might keep them if they are small.
+# Data/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific
+logs/
+train_out.log
+probe_results.json
+probe_results.txt
+create_zip.py
+run_training.bat
+setup_env.bat
+check_labels.py
+calib_research.py

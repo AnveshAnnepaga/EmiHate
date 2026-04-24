@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EmiHate | Explainable AI Multi-Head Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css?v=3.2">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/simple-keyboard@latest/build/css/index.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/simple-keyboard@latest/build/index.min.js"></script>
+</head>
+
+<body class="dark-mode">
+    <div class="glass-container">
+        <header>
+            <div class="logo">
+                <svg width="45" height="45" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="50" cy="50" r="48" stroke="#ff00ff" stroke-width="2" />
+                    <path d="M50 20L30 55H50V80L70 45H50V20Z" fill="#ff00ff" />
+                </svg>
+                <h1>EMI<span class="accent">HATE</span> <span class="sub-brand">INTELLIGENCE GRID</span></h1>
+            </div>
+            <div class="status-badge" id="backend-status">
+                <span class="pulse"></span> 9-HEAD ENGINE ACTIVE
+            </div>
+        </header>
+
+        <main class="dashboard-grid">
+            <!-- Left Panel: Input -->
+            <section class="input-panel">
+                <div class="card glass">
+                    <div class="card-header">
+                        <h3><i class="fas fa-brain"></i> Intelligence Input</h3>
+                        <button id="toggle-keyboard" class="icon-btn" title="Toggle Multilingual Virtual Keyboard">
+                            <i class="fas fa-keyboard"></i>
+                            <span class="btn-label" style="font-size: 0.75rem; margin-left: 5px;">KB</span>
+                        </button>
+                    </div>
+                    <div class="input-tabs">
+                        <button class="tab-btn active" data-tab="text">Text Context</button>
+                        <button class="tab-btn" data-tab="media">Vision OCR</button>
+                    </div>
+
+                    <div class="tab-content active" id="text-tab">
+                        <textarea id="main-input" placeholder="Enter English, Hindi, or Telugu text for deep grid analysis..."></textarea>
+                        
+                        <!-- Premium Multilingual Keyboard Gateway -->
+                        <div id="keyboard-wrapper" class="hidden">
+                            <div class="keyboard-controls">
+                                <span class="kb-label">EMI-HATE INPUT ENGINE:</span>
+                                <select id="kb-lang-select">
+                                    <option value="english">Standard (EN)</option>
+                                    <option value="hindi">Hindi (HI)</option>
+                                    <option value="telugu">Telugu (TE)</option>
+                                </select>
+                                <button id="close-kb" class="mini-btn">×</button>
+                            </div>
+                            <div class="simple-keyboard"></div>
+                        </div>
+                        <div class="input-controls">
+                            <select id="analysis-type">
+                                <option value="text">General Context</option>
+                                <option value="tweet">Social Media Intelligence</option>
+                            </select>
+                            <button id="analyze-btn" class="primary-btn pulse-glow">Invoke EmiHate Grid</button>
+                        </div>
+                        <div class="xai-toggle-box">
+                            <input type="checkbox" id="xai-toggle" checked>
+                            <label for="xai-toggle">Enable Deep AI Analysis (LIME/SHAP)</label>
+                        </div>
+                    </div>
+
+                    <div class="tab-content" id="media-tab">
+                        <div class="drop-zone" id="drop-zone">
+                            <i class="fas fa-eye fa-3x"></i>
+                            <p>Drop Image or PDF Data</p>
+                            <button class="secondary-btn" style="pointer-events: none; margin-top: 10px;">Browse Files</button>
+                            <input type="file" id="file-input" hidden accept=".jpg,.png,.pdf,.docx">
+                        </div>
+                        <div id="file-preview-card" class="hidden">
+                            <img id="thumb-preview" src="" class="thumb">
+                            <p id="file-name-text"></p>
+                            <div class="media-controls">
+                                <button id="compute-media-btn" class="primary-btn">Run EmiHate Extraction</button>
+                                <button id="clear-media-btn" class="secondary-btn">✖ Clear and Change</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card glass mini-card">
+                    <h3><i class="fas fa-project-diagram"></i> The EmiHate Pipeline</h3>
+                    <div class="pipeline-flow">
+                        <span>Capture</span> ➔ <span>Process</span> ➔ <span>Analyze</span> ➔ <span>Verdict</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Center Panel: Results -->
+            <section class="results-panel">
+                <div id="loading-overlay" class="hidden">
+                    <div class="loader-box">
+                        <div class="loader"></div>
+                        <p class="loading-main">Analyzing EmiHate Intelligence</p>
+                        <p id="loading-status" class="loading-sub">Initiating Neural Parallelism...</p>
+                    </div>
+                </div>
+
+                <div class="stats-row">
+                    <div class="stat-card glass" id="lang-stat">
+                        <label>Language</label>
+                        <span class="val">---</span>
+                    </div>
+                    <div class="stat-card glass" id="hate-stat">
+                        <label>Hate Label</label>
+                        <span class="val">---</span>
+                    </div>
+                    <div class="stat-card glass" id="emotion-stat">
+                        <label>Emotion</label>
+                        <span class="val">---</span>
+                    </div>
+                    <div class="stat-card glass" id="sentiment-stat">
+                        <label>Sentiment</label>
+                        <span class="val">---</span>
+                    </div>
+                </div>
+
+                <div class="card main-results verdict-card-reactive">
+                    <h3><i class="fas fa-poll-h"></i> EmiHate Verdict Summary</h3>
+                    <div id="neural-verdict" class="verdict-box">
+                        Awaiting data stream for grid computation...
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="resultsChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="card explain-card">
+                    <h3><i class="fas fa-fingerprint"></i> LIME Logic Highlights</h3>
+                    <div id="text-highlight-area" class="highlight-box">
+                        EmiHate weights will illustrate word influence here...
+                    </div>
+                </div>
+            </section>
+
+            <!-- Right Panel: SHAP -->
+            <section class="shap-panel">
+                <div class="card full-height">
+                    <h3><i class="fas fa-chart-line"></i> Global Grid Importance</h3>
+                    <p class="subtitle">Feature contribution across all 9 BERT heads.</p>
+                    <div class="shap-chart-container">
+                        <div id="xai-active-head" class="mini-badge">Primary Evidence: Hate Detection</div>
+                        <canvas id="shapChart"></canvas>
+                    </div>
+                    
+                    <div class="color-key card glass">
+                        <h4><i class="fas fa-microchip"></i> XAI Neural Weights</h4>
+                        <div class="key-item"><span class="key-color magenta"></span> POSITIVE / LOVE INFLUENCE</div>
+                        <div class="key-item"><span class="key-color cyan"></span> NEUTRAL / SAFE BASELINE</div>
+                        <div class="key-item"><span class="key-color rose"></span> HATE / ALERT TRIGGER</div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <section class="about-grid">
+            <div class="card about-card glass">
+                <h3><i class="fas fa-network-wired"></i> EmiHate 9-Head Architecture</h3>
+                <p>EmiHate uses a custom BERT pipeline with 9 specialized virtual heads. Each head is trained on multilingual English, Hindi, and Telugu nuances for rapid detection.</p>
+                <div class="tech-grid">
+                    <div class="tech-item"><i class="fas fa-shield-alt"></i> <strong>Hate Defense</strong></div>
+                    <div class="tech-item"><i class="fas fa-heart"></i> <strong>Emotion Mapping</strong></div>
+                    <div class="tech-item"><i class="fas fa-balance-scale"></i> <strong>Sentiment Balance</strong></div>
+                </div>
+            </div>
+            <div class="card about-card glass">
+                <h3><i class="fas fa-eye"></i> Vision-Max OCR Engine</h3>
+                <p>EmiHate Vision+ upscales and sharpens social media screenshots by 2.2x before parsing. This ensures even blurry evidence is classified with maximum neural accuracy.</p>
+            </div>
+        </section>
+        
+        </section>
+
+        <footer>
+            <p>&copy; 2026 EmiHate Intelligence Grid | Multilingual Safety Framework</p>
+        </footer>
+    </div>
+
+    <!-- Modals / Toast -->
+    <div id="toast" class="hidden"></div>
+
+    <script src="/static/app.js?v=3.2"></script>
+</body>
+</html>

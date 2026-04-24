@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  emihate-engine:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: emihate-engine:latest
+    container_name: emihate-api
+    ports:
+      - "5051:5051"
+    environment:
+      - PORT=5051
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./models:/app/models  # Mount models for persistence or easy updates
+      - ./Data:/app/Data      # Mount data if needed
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5051/api/health"]
+      interval: 1m
+      timeout: 10s
+      retries: 3
+
+networks:
+  default:
+    name: emihate-network
