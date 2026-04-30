@@ -152,7 +152,8 @@ cython_debug/
 .vscode/
 
 # Large Model Files and Data (Crucial for GitHub)
-models/
+models/*
+!models/.gitkeep
 Data/
 *.pth
 *.bin
