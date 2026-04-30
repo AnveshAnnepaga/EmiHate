@@ -1,5 +1,5 @@
 # Stage 1: Build stage
-FROM python:3.10-slim as builder
+FROM python:3.10-slim-bookworm as builder
 
 # Install system dependencies needed for building some python packages
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -17,7 +17,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 
 # Stage 2: Runtime stage
-FROM python:3.10-slim
+FROM python:3.10-slim-bookworm
 
 # Set environment variables
 # PYTHONDONTWRITEBYTECODE: Prevents Python from writing .pyc files
@@ -60,8 +60,8 @@ EXPOSE 5051
 
 # Healthcheck to ensure the container is running correctly
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:5051/api/health || exit 1
+  CMD curl -f http://localhost:${PORT:-5051}/api/health || exit 1
 
 # Run the application
 # We use --app-dir to point to the 'api' folder so that internal imports (like 'from inference import') work
-CMD ["uvicorn", "main:app", "--app-dir", "api", "--host", "0.0.0.0", "--port", "5051"]
+CMD uvicorn main:app --app-dir api --host 0.0.0.0 --port ${PORT:-5051}
