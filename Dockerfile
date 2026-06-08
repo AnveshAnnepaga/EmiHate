@@ -25,7 +25,10 @@ FROM python:3.10-slim-bookworm
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PYTHONPATH=/app \
-    PORT=7860
+    PORT=7860 \
+    MPLCONFIGDIR=/tmp/matplotlib \
+    TRANSFORMERS_CACHE=/tmp/huggingface \
+    HF_HOME=/tmp/huggingface
 
 # Install runtime system dependencies for OCR and Image processing
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -34,8 +37,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Create a non-root user for security
-RUN groupadd -r appuser && useradd -r -g appuser appuser
+# Create a non-root user for security with a home directory
+RUN groupadd -r appuser && useradd -r -g appuser -d /home/appuser -m appuser
 
 WORKDIR /app
 
