@@ -8,7 +8,7 @@ import ocr_service
 app = FastAPI(
     title="EmiHate Intelligence Grid",
     description="Backend routing Language -> 9 Heads (Hate, Emotion, Sentiment). Balanced and Calibrated.",
-    version="2.0.0"
+    version="1.0.0"
 )
 
 # Enable CORS for frontend integration
@@ -123,11 +123,11 @@ if __name__ == "__main__":
     print(" EMIHATE NEURAL ARCHITECTURE: ONLINE ")
     print(f" - Core Engine:   Multilingual BERT-9 v4.2")
     print(f" - Grid Status:   {'[READY]' if os.path.exists(frontend_path) else '[MISSING! Check Path]'}")
-    print(f" - Grid Port:     5051")
+    print(f" - Grid Port:     7860")
     print("="*50 + "\n")
 
     if not os.path.exists(frontend_path):
         print(f"[CRITICAL ERROR] The 'frontend' directory was not found at {frontend_path}.")
         print("Please ensure your project structure is: root/api/main.py and root/frontend/index.html")
     
-    uvicorn.run(app, host="127.0.0.1", port=5051, log_level="info")
+    uvicorn.run(app, host="127.0.0.1", port=7860, log_level="info")

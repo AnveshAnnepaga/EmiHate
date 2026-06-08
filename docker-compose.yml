@@ -8,16 +8,16 @@ services:
     image: emihate-engine:latest
     container_name: emihate-api
     ports:
-      - "5051:5051"
+      - "7860:7860"
     environment:
-      - PORT=5051
+      - PORT=7860
       - PYTHONUNBUFFERED=1
     volumes:
       - ./models:/app/models  # Mount models for persistence or easy updates
       - ./Data:/app/Data      # Mount data if needed
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5051/api/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:7860/api/health"]
       interval: 1m
       timeout: 10s
       retries: 3

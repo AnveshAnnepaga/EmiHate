@@ -2,7 +2,7 @@ torch
 transformers
 datasets
 evaluate
-fastapi
+fastapi>=0.111.0
 uvicorn
 easyocr
 python-docx

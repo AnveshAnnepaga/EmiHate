@@ -1,7 +1,7 @@
 import requests
 import json
 
-BASE_URL = "http://127.0.0.1:5051/api"
+BASE_URL = "http://127.0.0.1:7860/api"
 
 def test_calibrated_sentiment():
     print("\n--- Testing Calibrated Sentiment (Neutral Check) ---")

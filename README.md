@@ -58,7 +58,7 @@ Ensure your pre-trained models are placed in the `models/` directory following t
 ```bash
 docker-compose up -d --build
 ```
-The application will be available at `http://localhost:5051`.
+The application will be available at `http://localhost:7860`.
 
 ### 3. Local Development
 ```bash
@@ -70,7 +70,7 @@ source venv/bin/activate  # or venv\Scripts\activate on Windows
 pip install -r requirements.txt
 
 # Start Server
-uvicorn api.main:app --host 127.0.0.1 --port 5051 --reload
+uvicorn api.main:app --host 127.0.0.1 --port 7860 --reload
 ```
 
 ---

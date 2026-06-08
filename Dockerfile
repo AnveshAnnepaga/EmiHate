@@ -25,7 +25,7 @@ FROM python:3.10-slim-bookworm
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PYTHONPATH=/app \
-    PORT=5051
+    PORT=7860
 
 # Install runtime system dependencies for OCR and Image processing
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -56,12 +56,12 @@ RUN chown -R appuser:appuser /app
 USER appuser
 
 # Expose the application port
-EXPOSE 5051
+EXPOSE 7860
 
 # Healthcheck to ensure the container is running correctly
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:${PORT:-5051}/api/health || exit 1
+  CMD curl -f http://localhost:${PORT:-7860}/api/health || exit 1
 
 # Run the application
 # We use --app-dir to point to the 'api' folder so that internal imports (like 'from inference import') work
-CMD uvicorn main:app --app-dir api --host 0.0.0.0 --port ${PORT:-5051}
+CMD uvicorn main:app --app-dir api --host 0.0.0.0 --port ${PORT:-7860}
