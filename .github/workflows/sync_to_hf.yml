@@ -17,4 +17,4 @@ jobs:
       - name: Push to hub
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: git push https://AnveshAnnepaga:$HF_TOKEN@huggingface.co/spaces/AnveshAnnepaga/EmiHate-Grid main
+        run: git push https://annepagaanvesh:$HF_TOKEN@huggingface.co/spaces/annepagaanvesh/EmiHate-Grid main
