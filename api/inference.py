@@ -108,16 +108,22 @@ def load_task_model(lang, task):
         if lang not in tokenizers: tokenizers[lang] = {}
         
         if task not in models[lang]:
-            path = os.path.join(MODELS_DIR, f"{lang}_{task}_best_model")
-            if os.path.exists(path):
-                try:
-                    print(f"--- Waking up EmiHate Core: {lang} {task} ---")
-                    tokenizers[lang][task] = AutoTokenizer.from_pretrained(path)
-                    models[lang][task] = AutoModelForSequenceClassification.from_pretrained(path).to(device).eval()
-                except Exception as e:
-                    print(f"[MODEL ERROR] Could not load head {lang}_{task}: {e}")
-            else:
-                print(f"[STORAGE WARNING] Head {lang}_{task} missing from 'models/' folder.")
+            local_path = os.path.join(MODELS_DIR, f"{lang}_{task}_best_model")
+            hf_repo = os.environ.get("HF_MODEL_REPO", "")
+            
+            try:
+                if hf_repo:
+                    print(f"--- Fetching EmiHate Core from HF Hub: {lang} {task} ---")
+                    tokenizers[lang][task] = AutoTokenizer.from_pretrained(hf_repo, subfolder=f"{lang}_{task}_best_model")
+                    models[lang][task] = AutoModelForSequenceClassification.from_pretrained(hf_repo, subfolder=f"{lang}_{task}_best_model").to(device).eval()
+                elif os.path.exists(local_path):
+                    print(f"--- Waking up EmiHate Core locally: {lang} {task} ---")
+                    tokenizers[lang][task] = AutoTokenizer.from_pretrained(local_path)
+                    models[lang][task] = AutoModelForSequenceClassification.from_pretrained(local_path).to(device).eval()
+                else:
+                    print(f"[STORAGE WARNING] Head {lang}_{task} missing from 'models/' and no HF_MODEL_REPO set.")
+            except Exception as e:
+                print(f"[MODEL ERROR] Could not load head {lang}_{task}: {e}")
 def clean_ocr_text(text: str) -> str:
     """Removes OCR gibberish, non-text symbols, and formatting noise."""
     import re
