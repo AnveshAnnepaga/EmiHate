@@ -1,3 +1,11 @@
+---
+title: EmiHate Grid
+emoji: 🛡️
+colorFrom: red
+colorTo: blue
+sdk: docker
+pinned: false
+---
 # 🛡️ EmiHate Intelligence Grid
 
 **Multilingual | Explainable | Neural Grid**
